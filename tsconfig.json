@@ -6,6 +6,7 @@
     "target": "es2020",
     "module": "esnext",
     "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "types": ["node"],
     "skipLibCheck": true

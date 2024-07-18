@@ -1,13 +1,17 @@
-import express from "express";
-import cors from "cors";
-import { createServer } from "http";
-import { WebSocketServer } from "ws";
-import { ApolloServer } from "@apollo/server";
-import { PubSub } from "graphql-subscriptions";
-import { expressMiddleware } from "@apollo/server/express4";
-import { makeExecutableSchema } from "@graphql-tools/schema";
-import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { Modules } from "./modules";
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
+import { ApolloServer } from '@apollo/server';
+import { PubSub } from 'graphql-subscriptions';
+import { expressMiddleware } from '@apollo/server/express4';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import { Modules } from './modules';
+import { TokenUtils } from './utils';
+import { db } from './db';
+import { GraphQLError } from 'graphql';
+import { ErrorCodes } from './constants';
 
 const pubsub = new PubSub();
 
@@ -25,7 +29,7 @@ const httpServer = createServer(app);
 
 const wsServer = new WebSocketServer({
   server: httpServer,
-  path: "/graphql",
+  path: '/graphql',
 });
 
 const server = new ApolloServer({
@@ -47,14 +51,39 @@ const server = new ApolloServer({
 await server.start();
 
 app.use(
-  "/graphql",
+  '/graphql',
   expressMiddleware(server, {
-    context: async ({ req, res }) => {
+    context: async ({ req }) => {
+      const authorization = req.headers.authorization;
+
+      if (!authorization) {
+        return {
+          pubsub,
+        };
+      }
+
+      const userFromToken = TokenUtils.decodeJWT(authorization);
+
+      if (!userFromToken) {
+        throw new GraphQLError(ErrorCodes.UNAUTHORIZED);
+      }
+
+      const user = await db
+        .selectFrom('user_data')
+        .selectAll()
+        .where('email', '=', userFromToken)
+        .executeTakeFirst();
+
+      if (!user) {
+        throw new GraphQLError(ErrorCodes.UNAUTHORIZED);
+      }
+
       return {
         pubsub,
+        user,
       };
     },
-  })
+  }),
 );
 
 export { httpServer };

@@ -1,3 +1,4 @@
-import { HealthModule } from "./health";
+import { HealthModule } from './health';
+import { UserModule } from './user';
 
-export const Modules = [HealthModule];
+export const Modules = [HealthModule, UserModule];

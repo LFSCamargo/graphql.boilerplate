@@ -1,5 +1,5 @@
-import { HealthResolvers } from "./resolvers";
-import { HealthTypes } from "./types";
+import { HealthResolvers } from './resolvers.health';
+import { HealthTypes } from './types.health';
 
 export const HealthModule = {
   types: HealthTypes,
